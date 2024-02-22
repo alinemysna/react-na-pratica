@@ -1,4 +1,4 @@
-import { Plus, Search, filter, FileDown, MoreHorizontal, Filter } from 'lucide-react'
+import { Plus, Search, FileDown, MoreHorizontal, Filter, Loader2 } from 'lucide-react'
 import { Header } from "./components/header"
 import { Tabs } from "./components/tabs"
 import { Button } from "./components/ui/button"
@@ -7,8 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Pagination } from "./components/pagination"
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import useDebounceValue from './hoots/use-debounce-value'
+import { FormEvent, useState } from 'react';
+
+import * as Dialog from '@radix-ui/react-dialog'
+import { CreateTagForm } from './components/create-tag-form'
+
 
 export interface TagResponse {
   first: number
@@ -22,12 +25,12 @@ export interface TagResponse {
 
 export interface Tag {
   title: string
+  slug: string
   amountOfVideos: number
   id: String
 }
 
 export function App() {
-  
   const [searchParams, setSearchParams] = useSearchParams()
   const urlFilter = searchParams.get('filter') ?? ''
   const [filter, setFilter] = useState('urlFilter')
@@ -36,7 +39,7 @@ export function App() {
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1
 
   const { data: tagsResponse, isLoading} = useQuery<TagResponse>({
-    queryKey: ['get-tags',urlFilter, page],
+    queryKey: ['get-tags', urlFilter, page],
     queryFn: async () => {
       const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=10&_per_page=10&title=${urlFilter}`)
       const data = await response.json()
@@ -71,10 +74,31 @@ export function App() {
       <main className="max-w-6xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Tags</h1>
-          <Button variant="primary">
-            <Plus className="size-3" />
-            Create new
-          </Button>
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <Button variant="primary">
+                <Plus className="size-3" />
+                Create new
+              </Button>
+            </Dialog.Trigger>
+
+            <Dialog.Portal>
+              <Dialog.Overlay className='fixed inset-8 bg-black/70' />
+              <Dialog.Content className='fixed  space-y-10 p-10 right-0 top-0 bottom-0 h-screen min-w-[320px] z-18 bg-zinc-950 border-l border-zinc-900'>
+                <div className='space-y-3'>
+                  <Dialog.Title className='text-xl font-bold'>
+                  Create tag
+                  </Dialog.Title>
+                  <Dialog.Description className='text-sm text-zinc-500'>
+                    Tags can be used to group vídeos about similar concepts
+                  </Dialog.Description>
+                </div>
+                <CreateTagForm />
+                <Dialog.Close />
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+
         </div>
 
         <div className="flex items-center justify-between">
@@ -102,7 +126,7 @@ export function App() {
             <TableRow>
               <TableHead></TableHead>
               <TableHead>Tag</TableHead>
-              <TableHead>Amount of vídeos</TableHead>
+              <TableHead>Amount of videos</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -114,11 +138,11 @@ export function App() {
               <TableCell>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium">{tag.title}</span>
-                  <span className="text-xs text-zinc-500">{tag.id}</span>
+                  <span className="text-xs text-zinc-500">{tag.slug}</span>
                 </div>
               </TableCell>
               <TableCell className="text-zinc-300">
-                {tag.amountOfVideos} vídeo(s)
+                {tag.amountOfVideos} video(s)
               </TableCell>
               <TableCell className="text-right">
                 <Button size="icon">
